@@ -173,3 +173,5 @@ tags
 # Project-specific files to ignore
 *.csv
 *.npy
+.idea
+
