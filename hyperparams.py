@@ -1,11 +1,7 @@
-
 import numpy as np
 import pickle
-from io import StringIO
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
-from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import accuracy_score
 from sklearn.utils._testing import ignore_warnings
@@ -13,10 +9,8 @@ from sklearn.exceptions import ConvergenceWarning
 import matplotlib.pyplot as plt
 from sklearn.inspection import permutation_importance
 
-
-
-input_data = np.genfromtxt('/Users/anyalachwani/Downloads/heart_failure_clinical_records_dataset.csv', delimiter=',', skip_header=1, dtype='float64', usecols=np.arange(0, 11))
-output_data = np.genfromtxt('/Users/anyalachwani/Downloads/heart_failure_clinical_records_dataset.csv', delimiter=',', skip_header=1, dtype='float64', usecols=(12))
+input_data = np.genfromtxt('heart_failure_clinical_records_dataset.csv', delimiter=',', skip_header=1, dtype='float64', usecols=np.arange(0, 11))
+output_data = np.genfromtxt('heart_failure_clinical_records_dataset.csv', delimiter=',', skip_header=1, dtype='float64', usecols=(12))
 inputs_train, inputs_dev, target_train, target_dev = train_test_split(input_data, output_data, test_size=0.2, random_state=42)
 
 @ignore_warnings(category=ConvergenceWarning)
@@ -45,9 +39,6 @@ def main(model, grid):
 
     return best_model
 
-
-
-
 if __name__ == '__main__':
     # main(LogisticRegression(), {
     #   'penalty': ['l1', 'l2', 'elasticnet'],
@@ -73,7 +64,7 @@ if __name__ == '__main__':
     # 'learning_rate_init': [0.0001, 0.00001, 0.000001],
     # 'alpha': [0.001, 0.0001, 0.00001, 0.000001],
     # })
-    best_mode l= main(RandomForestClassifier(), {
+    best_model = main(RandomForestClassifier(), {
 
         'n_estimators': [20, 100, 200, 500, 750, 1000],
         # 'min_samples_split': [2, 5, 10],
@@ -96,10 +87,10 @@ if __name__ == '__main__':
     with open('randomforestmodel.pkl', 'rb') as f:
         randomforest_model = pickle.load(f)
 
-
     importances = randomforest_model.feature_importances_
-    feature_names = next
-        (open('/Users/anyalachwani/Downloads/heart_failure_clinical_records_dataset.csv')).strip().split(',')[:-1]
+    feature_names = next(open(
+        'heart_failure_clinical_records_dataset.csv'
+    )).strip().split(',')[:-1]
     # feature_names and importances were not the same size
     min_length = min(len(importances), len(feature_names))
     importances = importances[:min_length]
@@ -122,7 +113,7 @@ if __name__ == '__main__':
     # permutation importance
     importances_permuationimportances = permutation_importance(best_model, inputs_train, target_train, n_repeats=5, random_state=30)
     importances1 = importances_permuationimportances.importances_mean
-    importances_final= result.importances_std
+    importances_final = importances_permuationimportances.importances_std
 
     # plot together
     ax.bar(np.arange(len(feature_names)) - 0.15, importances_done, color='red', label='RF Importances', width=0.3)
@@ -151,4 +142,3 @@ if __name__ == '__main__':
 # Best Score: 0.7733156028368795
 # Accuracy on test data: 0.7166666666666667
 # Accuracy on train data: 0.9159663865546218
-
