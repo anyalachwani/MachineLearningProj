@@ -1,0 +1,23 @@
+# Test 1 for Random Forest Classifier
+
+# Best Parameters: {'class_weight': None, 'max_depth': 50, 'max_features': 'sqrt', 'min_samples_leaf': 5, 'n_estimators': 500}
+# n_estimators, min_samples_leaf, max_features, max_depth, class_weight
+# Acc Score: 76.9, Training: 89.4,  Testing: 73.3
+
+
+# Test 2 Random Forest Classifier
+# max_depth, max_features, min_samples_leaf, n_estimators
+# Best Parameters: {'max_depth': 80, 'max_features': 'sqrt', 'min_samples_leaf': 10, 'n_estimators': 400}
+# Best Score: 76.5%, train: 81%, test: 67%
+
+
+# Test 3 RFC
+# Best Parameters: {'bootstrap': True, 'max_depth': 200, 'min_samples_leaf': 2, 'n_estimators': 500}
+# bootstrap, max_depth, min_samples_leaf, n_estimators
+# Best Score: 0.7692375886524824, Accuracy on test data: 0.7, Accuracy on train data: 0.9831932773109243
+
+
+# Best Parameters: {'max_depth': 100, 'max_features': 'sqrt', 'min_samples_leaf': 4, 'n_estimators': 200}
+# Best Score: 0.7733156028368795
+# Accuracy on test data: 0.7166666666666667
+# Accuracy on train data: 0.9159663865546218

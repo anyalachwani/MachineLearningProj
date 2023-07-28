@@ -173,5 +173,6 @@ tags
 # Project-specific files to ignore
 *.csv
 *.npy
+*.pkl
 .idea
 
