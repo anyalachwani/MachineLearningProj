@@ -11,9 +11,13 @@ from sklearn.exceptions import ConvergenceWarning
 import matplotlib.pyplot as plt
 from sklearn.inspection import permutation_importance
 
-input_data = np.genfromtxt('heart_failure_clinical_records_dataset.csv', delimiter=',', skip_header=1, dtype='float64', usecols=np.arange(0, 11))
-output_data = np.genfromtxt('heart_failure_clinical_records_dataset.csv', delimiter=',', skip_header=1, dtype='float64', usecols=(12))
-inputs_train, inputs_dev, target_train, target_dev = train_test_split(input_data, output_data, test_size=0.2, random_state=42)
+input_data = np.genfromtxt('heart_failure_clinical_records_dataset.csv', delimiter=',',
+                           skip_header=1, dtype='float64', usecols=np.arange(0, 11))
+output_data = np.genfromtxt('heart_failure_clinical_records_dataset.csv', delimiter=',',
+                            skip_header=1, dtype='float64', usecols=(12))
+inputs_train, inputs_dev, target_train, target_dev = train_test_split(input_data, output_data, test_size=0.2,
+                                                                      random_state=42)
+
 
 @ignore_warnings(category=ConvergenceWarning)
 def main(model, grid):
@@ -23,8 +27,8 @@ def main(model, grid):
     best_parameters = grid_search.best_params_
     best_accscore = grid_search.best_score_
 
-    print("Best Parameters:", best_parameters)
-    print("Best accuracy on cv holdout data:", best_accscore)
+    return ("Best Parameters:", best_parameters)
+    return ("Best accuracy on cv holdout data:", best_accscore)
 
     best_model = grid_search.best_estimator_
     best_model.fit(inputs_train, target_train)
@@ -32,14 +36,18 @@ def main(model, grid):
     predictions = best_model.predict(inputs_dev)
     accuracy = accuracy_score(target_dev, predictions)
 
-    print("Accuracy on test data:", accuracy)
+    return ("Accuracy on test data:", accuracy)
 
     predictions = best_model.predict(inputs_train)
     accuracy = accuracy_score(target_train, predictions)
 
-    print("Accuracy on train data:", accuracy)
+    return ("Accuracy on train data:", accuracy)
+
+    with open('randomforestmodel.pkl', 'rb') as file:
+        loaded_model = pickle.load(file)
 
     return best_model
+
 
 if __name__ == '__main__':
     model_savefile = Path('randomforestmodel.pkl')
@@ -64,18 +72,26 @@ if __name__ == '__main__':
     feature_names = next(open(
         'heart_failure_clinical_records_dataset.csv'
     )).strip().split(',')[:-1]
+    print(feature_names)
+
+    # remove to test
+    # try1 = np.delete(feature_names,-12)
+    try1 = feature_names
+    print(try1)
+
     # feature_names and importances were not the same size
-    min_length = min(len(rf_importances), len(feature_names))
+    min_length = min(len(rf_importances), len(try1))
     rf_importances = rf_importances[:min_length]
-    feature_names = feature_names[:min_length]
+    try1 = try1[:min_length + 1]
 
     # sort
     indices_done = rf_importances.argsort()[::-1]
     importances_done = rf_importances[indices_done]
-    feature_names_sorted = np.array(feature_names)[indices_done]
+    feature_names_sorted = np.array(try1)[indices_done]
+    print(feature_names_sorted)
 
     fig, ax = plt.subplots()
-    ax.set_xticks(range(len(feature_names)))
+    ax.set_xticks(range(len(feature_names_sorted)))
     ax.set_xticklabels(feature_names_sorted, rotation=45)
 
     # permutation importance
@@ -84,7 +100,115 @@ if __name__ == '__main__':
     # plot together
     ax.set_xlabel('Features')
     ax.set_ylabel('Importance')
-    ax.bar(np.arange(len(feature_names)) - 0.15, importances_done, color='red', label='RF Importances', width=0.3)
-    ax.bar(np.arange(len(feature_names)) + 0.15, pm_importances.importances_mean, color='blue', label='Permutation Importance', width=0.3)
+    ax.bar(np.arange(len(feature_names_sorted)) - 0.15, importances_done, color='red', label='RF Importances',
+           width=0.3)
+    ax.bar(np.arange(len(feature_names_sorted)) + 0.15, pm_importances.importances_mean, color='blue',
+           label='Permutation Importance', width=0.3, yerr=pm_importances.importances_std)
+
     ax.legend()
     plt.show()
+
+    # train on each one
+    accuracies_test2 = []
+    accuracies_train2 = []
+    features_changing = []
+    for i in range(input_data.shape[1]):
+        input_data_altered = np.delete(input_data, i, axis=1)
+        xtrain2, xdev2, ytrain2, ydev2 = train_test_split(input_data_altered, output_data, test_size=0.2,
+                                                          random_state=42)
+        randomforest_one = RandomForestClassifier()
+        randomforest_one.fit(xtrain2, ytrain2)
+        predictions_train_altered = randomforest_one.predict(xtrain2)
+        accuracy_onechanged = accuracy_score(ytrain2, predictions_train_altered)
+        accuracies_train2.append(accuracy_onechanged)
+        predictions_one1 = randomforest_one.predict(xdev2)
+        accuracy_onechanged2 = accuracy_score(ydev2, predictions_one1)
+        accuracies_test2.append(accuracy_onechanged2)
+        features_changing.append(randomforest_one.feature_importances_)
+
+    # plot importance
+    feature_names_ = next(
+        open('/Users/anyalachwani/Downloads/heart_failure_clinical_records_dataset.csv')).strip().split(',')[:-1]
+
+    plt.figure(figsize=(10, 6))
+    for i, iteration in enumerate(features_changing):
+        plt.plot(iteration, label=f"Excluded Feature {i + 1} ({feature_names_[i]})")
+
+    plt.xlabel("Feature Index")
+    plt.ylabel("Importance")
+    plt.title("Feature Importances When Excluding Each Feature")
+    plt.xticks(range(len(feature_names_)), feature_names_, rotation=45)
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+    # accuracy(training)
+    plt.figure(figsize=(10, 6))
+    plt.plot(range(1, input_data.shape[1] + 1), accuracies_train2, marker='o')
+    plt.xlabel("Features Excluded")
+    plt.ylabel("Accuracy - Training Data")
+    plt.title("Features vs. Accuracy")
+    plt.xticks(range(1, input_data.shape[1] + 1))
+    plt.grid(True)
+    plt.show()
+
+    # accuracy(test)
+    plt.figure(figsize=(10, 6))
+    plt.plot(range(1, input_data.shape[1] + 1), accuracies_test2, marker='o')
+    plt.xlabel("Features Excluded")
+    plt.ylabel("Accuracy - Test Data")
+    plt.title("Features vs. Accuracy")
+    plt.xticks(range(1, input_data.shape[1] + 1))
+    plt.grid(True)
+    plt.show()
+
+    # removed time
+
+    # Training 1 changed: 0.702928870292887
+    # Training 2 changed: 0.5833333333333334
+
+    # removed
+
+    # train on most important feature
+    accuracies_test = []
+    accuracies_train = []
+    features = []
+    indices = np.argsort(rf_importances)[::-1]
+    X_train1, X_dev1, y_train1, y_dev1 = train_test_split(input_data, output_data, test_size=0.2, random_state=42)
+
+    for i in range(1, len(indices) + 1):
+        impfeature_indices = indices[:i]
+        most_important_feature_data = input_data[:, impfeature_indices]
+        xtrain, xdev = X_train1[:, impfeature_indices], X_dev1[:, impfeature_indices]
+
+        randomforest_mostimportant = RandomForestClassifier()
+        randomforest_mostimportant.fit(xtrain, y_train1)
+        predictions_mostimportant = randomforest_mostimportant.predict(xtrain)
+        accuracy1 = accuracy_score(y_train1, predictions_mostimportant)
+        accuracies_train.append(accuracy1)
+
+        predictions_testdata = randomforest_mostimportant.predict(xdev)
+        accuracy2 = accuracy_score(y_dev1, predictions_testdata)
+        accuracies_test.append(accuracy2)
+
+        features.append(i)
+
+    # On test
+    plt.plot(features, accuracies_test, marker='o')
+    plt.xlabel("Number of Features")
+    plt.ylabel("Accuracy on Test data")
+    plt.title(" Number of Features vs Accuracy")
+    plt.grid(True)
+    plt.show()
+
+    # On train
+    plt.plot(features, accuracies_train, marker='o')
+    plt.xlabel("Number of Features")
+    plt.ylabel("Accuracy on Train data")
+    plt.title(" Number of Features vs Accuracy")
+    plt.grid(True)
+    plt.show()
+
+
+
+
