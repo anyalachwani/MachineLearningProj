@@ -33,8 +33,8 @@ def main(model, grid):
     best_parameters = grid_search.best_params_
     best_accscore = grid_search.best_score_
 
-    return ("Best Parameters:", best_parameters)
-    return ("Best accuracy on cv holdout data:", best_accscore)
+    print("Best Parameters:", best_parameters)
+    print("Best accuracy on cv holdout data:", best_accscore)
 
     best_model = grid_search.best_estimator_
     best_model.fit(inputs_train, target_train)
@@ -42,12 +42,12 @@ def main(model, grid):
     predictions = best_model.predict(inputs_dev)
     accuracy = accuracy_score(target_dev, predictions)
 
-    return ("Accuracy on test data:", accuracy)
+    print("Accuracy on test data:", accuracy)
 
     predictions = best_model.predict(inputs_train)
     accuracy = accuracy_score(target_train, predictions)
 
-    return ("Accuracy on train data:", accuracy)
+    print("Accuracy on train data:", accuracy)
 
     with open('randomforestmodel.pkl', 'rb') as file:
         loaded_model = pickle.load(file)
