@@ -22,7 +22,7 @@ inputs_train, inputs_dev, target_train, target_dev = train_test_split(input_data
                                                                       random_state=42)
 
 # Print the "time" column values
-print("Time Column:", time_column)
+#print("Time Column:", time_column)
 
 
 @ignore_warnings(category=ConvergenceWarning)
