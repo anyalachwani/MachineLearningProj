@@ -13,9 +13,9 @@ from sklearn.inspection import permutation_importance
 
 input_data = np.genfromtxt('heart_failure_clinical_records_dataset.csv', delimiter=',',
                            skip_header=1, dtype='float64', usecols=np.arange(0, 11))
-time_column = np.genfromtxt('heart_failure_clinical_records_dataset.csv', delimiter=',',
-                            skip_header=1, dtype='float64', usecols=(11))
-input_data = np.column_stack((input_data, time_column))
+#time_column = np.genfromtxt('heart_failure_clinical_records_dataset.csv', delimiter=',',
+ #                           skip_header=1, dtype='float64', usecols=(11))
+#input_data = np.column_stack((input_data, time_column))
 output_data = np.genfromtxt('heart_failure_clinical_records_dataset.csv', delimiter=',',
                             skip_header=1, dtype='float64', usecols=(12))
 inputs_train, inputs_dev, target_train, target_dev = train_test_split(input_data, output_data, test_size=0.2,
@@ -80,7 +80,7 @@ if __name__ == '__main__':
     feature_names = next(open(
         'heart_failure_clinical_records_dataset.csv'
     )).strip().split(',')[:-1]
-    feature_names.append("time")
+ #   feature_names.append("time")
     print("rf_importance", rf_importances)
 
     print("feature names", feature_names)
