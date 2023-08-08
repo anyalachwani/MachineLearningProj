@@ -13,10 +13,16 @@ from sklearn.inspection import permutation_importance
 
 input_data = np.genfromtxt('heart_failure_clinical_records_dataset.csv', delimiter=',',
                            skip_header=1, dtype='float64', usecols=np.arange(0, 11))
+time_column = np.genfromtxt('heart_failure_clinical_records_dataset.csv', delimiter=',',
+                            skip_header=1, dtype='float64', usecols=(11))
+input_data = np.column_stack((input_data, time_column))
 output_data = np.genfromtxt('heart_failure_clinical_records_dataset.csv', delimiter=',',
                             skip_header=1, dtype='float64', usecols=(12))
 inputs_train, inputs_dev, target_train, target_dev = train_test_split(input_data, output_data, test_size=0.2,
                                                                       random_state=42)
+
+# Print the "time" column values
+print("Time Column:", time_column)
 
 
 @ignore_warnings(category=ConvergenceWarning)
@@ -62,33 +68,65 @@ if __name__ == '__main__':
             'min_samples_leaf': [1, 2, 4, 8],
             'max_depth': [None],
         })
-
         print('Saving model...')
         with open(model_savefile, 'wb') as f:
             pickle.dump(best_model, f)
     print('Success!')
+    # importances_done = best_model.feature_importances_
 
+    print("feature importances", best_model.feature_importances_)
     rf_importances = best_model.feature_importances_
+
     feature_names = next(open(
         'heart_failure_clinical_records_dataset.csv'
     )).strip().split(',')[:-1]
-    print(feature_names)
+    feature_names.append("time")
+    print("rf_importance", rf_importances)
 
+    print("feature names", feature_names)
     # remove to test
     # try1 = np.delete(feature_names,-12)
-    try1 = feature_names
-    print(try1)
+    # try1 = np.delete(feature_names, -10)
+    # try1 = feature_names
+    # print("try1", try1)
+    # feature_names = np.delete(feature_names, -2)
+
+    # print("Length of rf_importances before alignment:", len(rf_importances))
+    # print("Length of try1 before alignment:", len(try1))
 
     # feature_names and importances were not the same size
-    min_length = min(len(rf_importances), len(try1))
-    rf_importances = rf_importances[:min_length]
-    try1 = try1[:min_length + 1]
+    # maximum = min(len(rf_importances), len(try1))
+    # rf_importances = rf_importances[:maximum]
+    # try1 = try1[:maximum]
+
+    # print("Length of rf_importances after alignment:", len(rf_importances))
+    # print("Length of try1 after alignment:", len(try1))
+
+    # indices_done = importances_done.argsort()[::-1]
+    # importances_done = importances_done[indices_done]
+    # feature_names_sorted = np.array(feature_names)[indices_done]
 
     # sort
-    indices_done = rf_importances.argsort()[::-1]
+    # print("rf_importances before sorting:", rf_importances)
+    indices_done = np.argsort(rf_importances)[::-1]
+    # print("rf importances after sorting", rf_importances)
+
+    # print("Sorted indices", indices_done)
     importances_done = rf_importances[indices_done]
-    feature_names_sorted = np.array(try1)[indices_done]
-    print(feature_names_sorted)
+    feature_names_sorted = np.array(feature_names)[indices_done]
+    print("feature names sorted", feature_names_sorted)
+    # print(feature_names_sorted)
+    # try1_sorted = [try1[i] for i in indices_done]
+    # print("try1_sorted", try1_sorted)
+
+    plt.figure(figsize=(10, 6))
+    plt.bar(range(len(feature_names_sorted)), importances_done, tick_label=feature_names_sorted)
+    plt.xticks(rotation=45, ha='right')
+    plt.xlabel("Features")
+    plt.ylabel("Importance")
+    plt.title("Feature Importances")
+    plt.tight_layout()
+    plt.show()
 
     fig, ax = plt.subplots()
     ax.set_xticks(range(len(feature_names_sorted)))
@@ -96,7 +134,7 @@ if __name__ == '__main__':
 
     # permutation importance
     pm_importances = permutation_importance(best_model, inputs_train, target_train, n_repeats=5, random_state=30)
-
+    print(pm_importances)
     # plot together
     ax.set_xlabel('Features')
     ax.set_ylabel('Importance')
@@ -127,17 +165,17 @@ if __name__ == '__main__':
         features_changing.append(randomforest_one.feature_importances_)
 
     # plot importance
-    feature_names_ = next(
-        open('/Users/anyalachwani/Downloads/heart_failure_clinical_records_dataset.csv')).strip().split(',')[:-1]
+    feature_names_1 = next(
+        open('heart_failure_clinical_records_dataset.csv')).strip().split(',')[:-1]
 
     plt.figure(figsize=(10, 6))
     for i, iteration in enumerate(features_changing):
-        plt.plot(iteration, label=f"Excluded Feature {i + 1} ({feature_names_[i]})")
+        plt.plot(iteration, label=f"Excluded Feature {i + 1} ({feature_names_1[i]})")
 
     plt.xlabel("Feature Index")
     plt.ylabel("Importance")
     plt.title("Feature Importances When Excluding Each Feature")
-    plt.xticks(range(len(feature_names_)), feature_names_, rotation=45)
+    plt.xticks(range(len(feature_names_1)), feature_names_1, rotation=45)
     plt.legend()
     plt.grid(True)
     plt.show()
