@@ -11,25 +11,23 @@ from sklearn.exceptions import ConvergenceWarning
 import matplotlib.pyplot as plt
 from sklearn.inspection import permutation_importance
 
-input_data = np.genfromtxt('heart_failure_clinical_records_dataset.csv', delimiter=',',
-                           skip_header=1, dtype='float64', usecols=np.arange(0, 11))
-#time_column = np.genfromtxt('heart_failure_clinical_records_dataset.csv', delimiter=',',
- #                           skip_header=1, dtype='float64', usecols=(11))
-#input_data = np.column_stack((input_data, time_column))
-output_data = np.genfromtxt('heart_failure_clinical_records_dataset.csv', delimiter=',',
+input_data = np.genfromtxt('/Users/anyalachwani/Downloads/heart_failure_clinical_records_dataset.csv', delimiter=',',
+                           skip_header=1, dtype='float64', usecols=np.arange(0, 12))
+output_data = np.genfromtxt('/Users/anyalachwani/Downloads/heart_failure_clinical_records_dataset.csv', delimiter=',',
                             skip_header=1, dtype='float64', usecols=(12))
 inputs_train, inputs_dev, target_train, target_dev = train_test_split(input_data, output_data, test_size=0.2,
                                                                       random_state=42)
+time_column = np.genfromtxt('/Users/anyalachwani/Downloads/heart_failure_clinical_records_dataset.csv', delimiter=',',
+                            skip_header=1, dtype='float64', usecols=(11))
 
 # Print the "time" column values
-#print("Time Column:", time_column)
+print("Time Column:", time_column)
 
 
 @ignore_warnings(category=ConvergenceWarning)
 def main(model, grid):
     grid_search = GridSearchCV(model, grid, cv=5, verbose=2)
     grid_search.fit(inputs_train, target_train)
-
     best_parameters = grid_search.best_params_
     best_accscore = grid_search.best_score_
 
@@ -41,12 +39,10 @@ def main(model, grid):
 
     predictions = best_model.predict(inputs_dev)
     accuracy = accuracy_score(target_dev, predictions)
-
     print("Accuracy on test data:", accuracy)
 
     predictions = best_model.predict(inputs_train)
     accuracy = accuracy_score(target_train, predictions)
-
     print("Accuracy on train data:", accuracy)
 
     with open('randomforestmodel.pkl', 'rb') as file:
@@ -58,29 +54,22 @@ def main(model, grid):
 if __name__ == '__main__':
     model_savefile = Path('randomforestmodel.pkl')
 
-    if model_savefile.exists():
-        print(f'Loading pretrained model from {model_savefile}...')
-        best_model = pickle.load(open(model_savefile, 'rb'))
-    else:
-        print('Training model...')
-        best_model = main(RandomForestClassifier(), {
-            'n_estimators': [20, 100, 200, 500, 750, 1000],
-            'min_samples_leaf': [1, 2, 4, 8],
-            'max_depth': [None],
-        })
-        print('Saving model...')
-        with open(model_savefile, 'wb') as f:
-            pickle.dump(best_model, f)
+    print('Training model...')
+    best_model = main(RandomForestClassifier(), {
+        'n_estimators': [20, 100, 200, 500, 750, 1000],
+        'min_samples_leaf': [1, 2, 4, 8],
+        'max_depth': [None],
+    })
+    print('Saving model...')
+    with open(model_savefile, 'wb') as f:
+        pickle.dump(best_model, f)
     print('Success!')
-    # importances_done = best_model.feature_importances_
 
-    print("feature importances", best_model.feature_importances_)
     rf_importances = best_model.feature_importances_
 
     feature_names = next(open(
-        'heart_failure_clinical_records_dataset.csv'
+        '/Users/anyalachwani/Downloads/heart_failure_clinical_records_dataset.csv'
     )).strip().split(',')[:-1]
- #   feature_names.append("time")
     print("rf_importance", rf_importances)
 
     print("feature names", feature_names)
@@ -146,7 +135,7 @@ if __name__ == '__main__':
     ax.legend()
     plt.show()
 
-    # train on each one
+    # train excluding features
     accuracies_test2 = []
     accuracies_train2 = []
     features_changing = []
@@ -164,23 +153,24 @@ if __name__ == '__main__':
         accuracies_test2.append(accuracy_onechanged2)
         features_changing.append(randomforest_one.feature_importances_)
 
-    # plot importance
+    # plot importance by excluding features one by one
     feature_names_1 = next(
-        open('heart_failure_clinical_records_dataset.csv')).strip().split(',')[:-1]
+        open('/Users/anyalachwani/Downloads/heart_failure_clinical_records_dataset.csv')).strip().split(',')[:-1]
 
     plt.figure(figsize=(10, 6))
     for i, iteration in enumerate(features_changing):
-        plt.plot(iteration, label=f"Excluded Feature {i + 1} ({feature_names_1[i]})")
+        plt.bar(np.arange(len(iteration)) + i * 0.2, iteration, width=0.2,
+                label=f"Excluded Feature {i + 1} ({feature_names_1[i]})")
 
-    plt.xlabel("Feature Index")
+    plt.xlabel("Feature")
     plt.ylabel("Importance")
     plt.title("Feature Importances When Excluding Each Feature")
-    plt.xticks(range(len(feature_names_1)), feature_names_1, rotation=45)
+    plt.xticks(np.arange(len(feature_names_1)) + (len(features_changing) - 1) * 0.2 / 2, feature_names_1, rotation=45)
     plt.legend()
     plt.grid(True)
     plt.show()
 
-    # accuracy(training)
+    # accuracy(training) as you go left to right, number of excluded features increases
     plt.figure(figsize=(10, 6))
     plt.plot(range(1, input_data.shape[1] + 1), accuracies_train2, marker='o')
     plt.xlabel("Features Excluded")
@@ -190,7 +180,7 @@ if __name__ == '__main__':
     plt.grid(True)
     plt.show()
 
-    # accuracy(test)
+    # accuracy(test) as you go left to right, number of excluded features increase
     plt.figure(figsize=(10, 6))
     plt.plot(range(1, input_data.shape[1] + 1), accuracies_test2, marker='o')
     plt.xlabel("Features Excluded")
