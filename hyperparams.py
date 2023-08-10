@@ -11,18 +11,14 @@ from sklearn.exceptions import ConvergenceWarning
 import matplotlib.pyplot as plt
 from sklearn.inspection import permutation_importance
 
-input_data = np.genfromtxt('/Users/anyalachwani/Downloads/heart_failure_clinical_records_dataset.csv', delimiter=',',
+input_data = np.genfromtxt('heart_failure_clinical_records_dataset.csv', delimiter=',',
                            skip_header=1, dtype='float64', usecols=np.arange(0, 12))
-output_data = np.genfromtxt('/Users/anyalachwani/Downloads/heart_failure_clinical_records_dataset.csv', delimiter=',',
+output_data = np.genfromtxt('heart_failure_clinical_records_dataset.csv', delimiter=',',
                             skip_header=1, dtype='float64', usecols=(12))
 inputs_train, inputs_dev, target_train, target_dev = train_test_split(input_data, output_data, test_size=0.2,
                                                                       random_state=42)
-time_column = np.genfromtxt('/Users/anyalachwani/Downloads/heart_failure_clinical_records_dataset.csv', delimiter=',',
+time_column = np.genfromtxt('heart_failure_clinical_records_dataset.csv', delimiter=',',
                             skip_header=1, dtype='float64', usecols=(11))
-
-# Print the "time" column values
-print("Time Column:", time_column)
-
 
 @ignore_warnings(category=ConvergenceWarning)
 def main(model, grid):
@@ -45,68 +41,42 @@ def main(model, grid):
     accuracy = accuracy_score(target_train, predictions)
     print("Accuracy on train data:", accuracy)
 
-    with open('randomforestmodel.pkl', 'rb') as file:
-        loaded_model = pickle.load(file)
-
     return best_model
 
 
 if __name__ == '__main__':
     model_savefile = Path('randomforestmodel.pkl')
 
-    print('Training model...')
-    best_model = main(RandomForestClassifier(), {
-        'n_estimators': [20, 100, 200, 500, 750, 1000],
-        'min_samples_leaf': [1, 2, 4, 8],
-        'max_depth': [None],
-    })
-    print('Saving model...')
-    with open(model_savefile, 'wb') as f:
-        pickle.dump(best_model, f)
+    if model_savefile.exists():
+        print(f'Loading pretrained model from {model_savefile}...')
+        best_model = pickle.load(open(model_savefile, 'rb'))
+    else:
+        print('Training model...')
+        best_model = main(RandomForestClassifier(), {
+            'n_estimators': [20, 100, 200, 500, 750, 1000],
+            'min_samples_leaf': [1, 2, 4, 8],
+            'max_depth': [None],
+        })
+        print('Saving model...')
+        with open(model_savefile, 'wb') as f:
+            pickle.dump(best_model, f)
     print('Success!')
 
     rf_importances = best_model.feature_importances_
 
     feature_names = next(open(
-        '/Users/anyalachwani/Downloads/heart_failure_clinical_records_dataset.csv'
+        'heart_failure_clinical_records_dataset.csv'
     )).strip().split(',')[:-1]
     print("rf_importance", rf_importances)
 
     print("feature names", feature_names)
-    # remove to test
-    # try1 = np.delete(feature_names,-12)
-    # try1 = np.delete(feature_names, -10)
-    # try1 = feature_names
-    # print("try1", try1)
-    # feature_names = np.delete(feature_names, -2)
-
-    # print("Length of rf_importances before alignment:", len(rf_importances))
-    # print("Length of try1 before alignment:", len(try1))
-
-    # feature_names and importances were not the same size
-    # maximum = min(len(rf_importances), len(try1))
-    # rf_importances = rf_importances[:maximum]
-    # try1 = try1[:maximum]
-
-    # print("Length of rf_importances after alignment:", len(rf_importances))
-    # print("Length of try1 after alignment:", len(try1))
-
-    # indices_done = importances_done.argsort()[::-1]
-    # importances_done = importances_done[indices_done]
-    # feature_names_sorted = np.array(feature_names)[indices_done]
 
     # sort
-    # print("rf_importances before sorting:", rf_importances)
     indices_done = np.argsort(rf_importances)[::-1]
-    # print("rf importances after sorting", rf_importances)
 
-    # print("Sorted indices", indices_done)
     importances_done = rf_importances[indices_done]
     feature_names_sorted = np.array(feature_names)[indices_done]
     print("feature names sorted", feature_names_sorted)
-    # print(feature_names_sorted)
-    # try1_sorted = [try1[i] for i in indices_done]
-    # print("try1_sorted", try1_sorted)
 
     plt.figure(figsize=(10, 6))
     plt.bar(range(len(feature_names_sorted)), importances_done, tick_label=feature_names_sorted)
@@ -123,14 +93,13 @@ if __name__ == '__main__':
 
     # permutation importance
     pm_importances = permutation_importance(best_model, inputs_train, target_train, n_repeats=5, random_state=30)
-    print(pm_importances)
     # plot together
     ax.set_xlabel('Features')
     ax.set_ylabel('Importance')
     ax.bar(np.arange(len(feature_names_sorted)) - 0.15, importances_done, color='red', label='RF Importances',
            width=0.3)
-    ax.bar(np.arange(len(feature_names_sorted)) + 0.15, pm_importances.importances_mean, color='blue',
-           label='Permutation Importance', width=0.3, yerr=pm_importances.importances_std)
+    ax.bar(np.arange(len(feature_names_sorted)) + 0.15, pm_importances.importances_mean[indices_done], color='blue',
+           label='Permutation Importance', width=0.3, yerr=pm_importances.importances_std[indices_done])
 
     ax.legend()
     plt.show()
@@ -155,7 +124,7 @@ if __name__ == '__main__':
 
     # plot importance by excluding features one by one
     feature_names_1 = next(
-        open('/Users/anyalachwani/Downloads/heart_failure_clinical_records_dataset.csv')).strip().split(',')[:-1]
+        open('heart_failure_clinical_records_dataset.csv')).strip().split(',')[:-1]
 
     plt.figure(figsize=(10, 6))
     for i, iteration in enumerate(features_changing):
