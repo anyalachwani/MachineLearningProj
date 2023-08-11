@@ -114,19 +114,25 @@ def main():
         input_data_altered = np.delete(input_data, i, axis=1)
         xtrain2, xdev2, ytrain2, ydev2 = train_test_split(input_data_altered, output_data, test_size=0.2,
                                                           random_state=42)
-        randomforest_one = RandomForestClassifier()
+        randomforest_one = RandomForestClassifier(**best_model.get_params())
         randomforest_one.fit(xtrain2, ytrain2)
+
         predictions_train_altered = randomforest_one.predict(xtrain2)
+
         accuracy_onechanged = accuracy_score(ytrain2, predictions_train_altered)
         accuracies_train2.append(accuracy_onechanged)
+
         predictions_one1 = randomforest_one.predict(xdev2)
+
         accuracy_onechanged2 = accuracy_score(ydev2, predictions_one1)
         accuracies_test2.append(accuracy_onechanged2)
+
         features_changing.append(randomforest_one.feature_importances_)
 
     # plot importance by excluding features one by one
     feature_names_1 = next(
-        open('heart_failure_clinical_records_dataset.csv')).strip().split(',')[:-1]
+        open('heart_failure_clinical_records_dataset.csv')
+    ).strip().split(',')[:-1]
 
     plt.figure(figsize=(10, 6))
     for i, iteration in enumerate(features_changing):
@@ -144,9 +150,9 @@ def main():
     # accuracy(training) as you go left to right, number of excluded features increases
     plt.figure(figsize=(10, 6))
     plt.plot(range(1, input_data.shape[1] + 1), accuracies_train2, marker='o')
-    plt.xlabel("Features Excluded")
-    plt.ylabel("Accuracy - Training Data")
-    plt.title("Features vs. Accuracy")
+    plt.xlabel("Feature Index Excluded")
+    plt.ylabel("Accuracy")
+    plt.title("Train Accuracy vs Features When Particular Indices are Removed")
     plt.xticks(range(1, input_data.shape[1] + 1))
     plt.grid(True)
     plt.show()
@@ -154,9 +160,9 @@ def main():
     # accuracy(test) as you go left to right, number of excluded features increase
     plt.figure(figsize=(10, 6))
     plt.plot(range(1, input_data.shape[1] + 1), accuracies_test2, marker='o')
-    plt.xlabel("Features Excluded")
-    plt.ylabel("Accuracy - Test Data")
-    plt.title("Features vs. Accuracy")
+    plt.xlabel("Feature Index Excluded")
+    plt.ylabel("Accuracy")
+    plt.title("Test Accuracy vs Features When Particular Indices are Removed")
     plt.xticks(range(1, input_data.shape[1] + 1))
     plt.grid(True)
     plt.show()
