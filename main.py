@@ -11,17 +11,25 @@ from sklearn.exceptions import ConvergenceWarning
 import matplotlib.pyplot as plt
 from sklearn.inspection import permutation_importance
 
-input_data = np.genfromtxt('heart_failure_clinical_records_dataset.csv', delimiter=',',
-                           skip_header=1, dtype='float64', usecols=np.arange(0, 12))
-output_data = np.genfromtxt('heart_failure_clinical_records_dataset.csv', delimiter=',',
-                            skip_header=1, dtype='float64', usecols=(12))
-inputs_train, inputs_dev, target_train, target_dev = train_test_split(input_data, output_data, test_size=0.2,
-                                                                      random_state=42)
-time_column = np.genfromtxt('heart_failure_clinical_records_dataset.csv', delimiter=',',
-                            skip_header=1, dtype='float64', usecols=(11))
+input_data = np.genfromtxt(
+    'heart_failure_clinical_records_dataset.csv', delimiter=',',
+    skip_header=1, dtype='float64', usecols=np.arange(0, 12)
+)
+output_data = np.genfromtxt(
+    'heart_failure_clinical_records_dataset.csv',
+    delimiter=',',
+    skip_header=1, dtype='float64', usecols=(12)
+)
+inputs_train, inputs_test, target_train, target_test = train_test_split(
+    input_data, output_data, test_size=0.2, random_state=42
+)
+time_column = np.genfromtxt(
+    'heart_failure_clinical_records_dataset.csv', delimiter=',',
+    skip_header=1, dtype='float64', usecols=(11)
+)
 
 @ignore_warnings(category=ConvergenceWarning)
-def main(model, grid):
+def get_best_model(model, grid):
     grid_search = GridSearchCV(model, grid, cv=5, verbose=2)
     grid_search.fit(inputs_train, target_train)
     best_parameters = grid_search.best_params_
@@ -33,8 +41,8 @@ def main(model, grid):
     best_model = grid_search.best_estimator_
     best_model.fit(inputs_train, target_train)
 
-    predictions = best_model.predict(inputs_dev)
-    accuracy = accuracy_score(target_dev, predictions)
+    predictions = best_model.predict(inputs_test)
+    accuracy = accuracy_score(target_test, predictions)
     print("Accuracy on test data:", accuracy)
 
     predictions = best_model.predict(inputs_train)
@@ -43,8 +51,7 @@ def main(model, grid):
 
     return best_model
 
-
-if __name__ == '__main__':
+def main():
     model_savefile = Path('randomforestmodel.pkl')
 
     if model_savefile.exists():
@@ -52,7 +59,7 @@ if __name__ == '__main__':
         best_model = pickle.load(open(model_savefile, 'rb'))
     else:
         print('Training model...')
-        best_model = main(RandomForestClassifier(), {
+        best_model = get_best_model(RandomForestClassifier(), {
             'n_estimators': [20, 100, 200, 500, 750, 1000],
             'min_samples_leaf': [1, 2, 4, 8],
             'max_depth': [None],
@@ -63,29 +70,16 @@ if __name__ == '__main__':
     print('Success!')
 
     rf_importances = best_model.feature_importances_
-
-    feature_names = next(open(
-        'heart_failure_clinical_records_dataset.csv'
-    )).strip().split(',')[:-1]
     print("rf_importance", rf_importances)
 
+    feature_names = np.array(next(open(
+        'heart_failure_clinical_records_dataset.csv'
+    )).strip().split(',')[:-1])
     print("feature names", feature_names)
 
-    # sort
-    indices_done = np.argsort(rf_importances)[::-1]
-
-    importances_done = rf_importances[indices_done]
-    feature_names_sorted = np.array(feature_names)[indices_done]
-    print("feature names sorted", feature_names_sorted)
-
-    plt.figure(figsize=(10, 6))
-    plt.bar(range(len(feature_names_sorted)), importances_done, tick_label=feature_names_sorted)
-    plt.xticks(rotation=45, ha='right')
-    plt.xlabel("Features")
-    plt.ylabel("Importance")
-    plt.title("Feature Importances")
-    plt.tight_layout()
-    plt.show()
+    idx_importance = np.argsort(rf_importances)[::-1]
+    rf_importances_sorted = rf_importances[idx_importance]
+    feature_names_sorted = feature_names[idx_importance]
 
     fig, ax = plt.subplots()
     ax.set_xticks(range(len(feature_names_sorted)))
@@ -93,13 +87,21 @@ if __name__ == '__main__':
 
     # permutation importance
     pm_importances = permutation_importance(best_model, inputs_train, target_train, n_repeats=5, random_state=30)
+    pm_importances_mean_sorted = pm_importances.importances_mean[idx_importance]
+    pm_importances_std_sorted = pm_importances.importances_std[idx_importance]
     # plot together
     ax.set_xlabel('Features')
     ax.set_ylabel('Importance')
-    ax.bar(np.arange(len(feature_names_sorted)) - 0.15, importances_done, color='red', label='RF Importances',
-           width=0.3)
-    ax.bar(np.arange(len(feature_names_sorted)) + 0.15, pm_importances.importances_mean[indices_done], color='blue',
-           label='Permutation Importance', width=0.3, yerr=pm_importances.importances_std[indices_done])
+    ax.bar(
+        np.arange(len(feature_names_sorted)) - 0.15, rf_importances_sorted,
+        color='red', label='RF Importances',
+        width=0.3
+    )
+    ax.bar(
+        np.arange(len(feature_names_sorted)) + 0.15, pm_importances_mean_sorted,
+        color='blue', label='Permutation Importance',
+        width=0.3, yerr=pm_importances_std_sorted
+    )
 
     ax.legend()
     plt.show()
@@ -206,6 +208,5 @@ if __name__ == '__main__':
     plt.grid(True)
     plt.show()
 
-
-
-
+if __name__ == '__main__':
+    main()
