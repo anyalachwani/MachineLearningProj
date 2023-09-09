@@ -76,8 +76,11 @@ def main():
 
 
     idx_importance = np.argsort(rf_importances)[::-1]
+
     rf_importances_sorted = rf_importances[idx_importance]
     feature_names_sorted = feature_names[idx_importance]
+
+    print(feature_names_sorted)
 
     plt.figure(figsize=(10, 6))
     plt.bar(range(len(feature_names_sorted)), rf_importances_sorted, tick_label=feature_names_sorted)
@@ -117,10 +120,15 @@ def main():
     accuracies_test2 = []
     accuracies_train2 = []
     features_changing = []
-    print("input_data.shape[1]:")
+    print("Input data")
+    print(input_data)
     print(input_data.shape[1])
     for i in range(input_data.shape[1]):
+        print("input_data_altered")
+        print(i)
         input_data_altered = np.delete(input_data, i, axis=1)
+        
+        print(input_data_altered)
         xtrain2, xdev2, ytrain2, ydev2 = train_test_split(input_data_altered, output_data, test_size=0.2,
                                                           random_state=42)
         randomforest_one = RandomForestClassifier(**best_model.get_params())
@@ -138,48 +146,41 @@ def main():
 
         features_changing.append(randomforest_one.feature_importances_)
 
-
     # plot importance by excluding features one by one
-
     feature_names_1 = next(
         open('heart_failure_clinical_records_dataset.csv')
     ).strip().split(',')[:-1]
 
+    plt.figure(figsize=(10, 6))
+    for i, iteration in enumerate(features_changing):
+        plt.bar(np.arange(len(iteration)) + i * 0.2, iteration, width=0.2,
+                label=f"Excluded Feature {i + 1} ({feature_names_1[i]})")
 
-    #plt.figure(figsize=(10, 6))
-   # for i, iteration in enumerate(features_changing):
-   #    plt.bar(np.arange(len(iteration)) + i * 0.2, iteration, width=0.2,
-   #             label=f"Excluded Feature {i + 1} ({feature_names_1[i]})")
-
-    #plt.xlabel("Feature")
-    #plt.ylabel("Importance")
-    #plt.title("Feature Importances When Excluding Each Feature")
-    #plt.xticks(np.arange(len(feature_names_1)) + (len(features_changing) - 1) * 0.2 / 2, feature_names_1, rotation=45)
-    #plt.legend()
-    #plt.grid(True)
-    #plt.show()
+    plt.xlabel("Feature")
+    plt.ylabel("Importance")
+    plt.title("Feature Importances When Excluding Each Feature")
+    plt.xticks(np.arange(len(feature_names_1)) + (len(features_changing) - 1) * 0.2 / 2, feature_names_1, rotation=45)
+    plt.legend()
+    plt.grid(True)
+    plt.show()
 
     # accuracy(training) as you go left to right, number of excluded features increases
     plt.figure(figsize=(10, 6))
-    print("accuracies_train2:")
-    print(accuracies_train2)
-    plt.bar(range(1, input_data.shape[1] + 1), accuracies_train2,tick_label=feature_names_1)
-    plt.xticks(rotation=45, ha='right')
-    plt.xlabel("Features Excluded")
+    plt.bar(range(1, input_data.shape[1] + 1), accuracies_train2)
     plt.xlabel("Feature Index Excluded")
     plt.ylabel("Accuracy")
     plt.title("Train Accuracy vs Features When Particular Indices are Removed")
-    #plt.xticks(range(1, input_data.shape[1] + 1))
+    plt.xticks(range(1, input_data.shape[1] + 1))
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.show()
 
     # accuracy(test) as you go left to right, number of excluded features increase
     plt.figure(figsize=(10, 6))
-    plt.bar(range(1, input_data.shape[1] + 1), accuracies_test2,tick_label=feature_names_1)
-    plt.xticks(rotation=45, ha='right')
-    plt.xlabel("Features Excluded")
+    plt.bar(range(1, input_data.shape[1] + 1), accuracies_test2)
+    plt.xlabel("Feature Index Excluded")
     plt.ylabel("Accuracy")
     plt.title("Test Accuracy vs Features When Particular Indices are Removed")
+    plt.xticks(range(1, input_data.shape[1] + 1))
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.show()
 
@@ -197,10 +198,8 @@ def main():
     indices = np.argsort(rf_importances)[::-1]
     X_train1, X_dev1, y_train1, y_dev1 = train_test_split(input_data, output_data, test_size=0.2, random_state=42)
 
-    for i in range(1,len(indices)+1):
+    for i in range(1, len(indices) + 1):
         impfeature_indices = indices[:i]
-        print("impfeature_indices")
-        print(impfeature_indices)
         most_important_feature_data = input_data[:, impfeature_indices]
         xtrain, xdev = X_train1[:, impfeature_indices], X_dev1[:, impfeature_indices]
 
@@ -212,20 +211,16 @@ def main():
 
         predictions_testdata = randomforest_mostimportant.predict(xdev)
         accuracy2 = accuracy_score(y_dev1, predictions_testdata)
-        print("accuracy2")
-        print(accuracy2)
         accuracies_test.append(accuracy2)
 
         features.append(i)
-        print("features:")
-        print(features)
+
     # On test
     plt.plot(features, accuracies_test, marker='o')
     plt.xlabel("Number of Features")
     plt.ylabel("Accuracy on Test data")
     plt.title(" Number of Features vs Accuracy")
     plt.grid(True)
-    plt.ylim((0, 1))
     plt.show()
 
     # On train
